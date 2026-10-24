@@ -2,22 +2,22 @@
 .gradle/
 build/
 app/build/
+
+# 本机配置（含本机 SDK 路径，不提交）
 local.properties
 
 # IDE
 .idea/
 *.iml
+.vscode/
 
 # 签名密钥（绝不提交）
 *.jks
 *.keystore
 
-# 本地缓存/构建产物
-*.log
-*.apk
-*.zip
-*.jar
-
 # 系统
 .DS_Store
 Thumbs.db
+
+# 本地缓存
+*.log

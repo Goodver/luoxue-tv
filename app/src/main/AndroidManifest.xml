@@ -19,6 +19,15 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
+        <!-- v1.38k：GeckoView native messaging 白名单声明（缺此声明时 content script 的
+             connectNative 报 "Native messaging not allowed"，扩展通道永远连不上） -->
+        <meta-data
+            android:name="org.mozilla.geckoview.web_extension_id"
+            android:value="gv-bridge@luoxue.tv" />
+        <meta-data
+            android:name="org.mozilla.geckoview.web_extension_native_name"
+            android:value="gv_bridge" />
+
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize|keyboard|keyboardHidden|navigation|uiMode"
@@ -34,6 +43,6 @@
         <activity
             android:name=".GeckoWebActivity"
             android:configChanges="orientation|screenSize|keyboard|keyboardHidden|navigation|uiMode"
-            android:exported="false" />
+            android:exported="true" />
     </application>
 </manifest>

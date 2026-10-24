@@ -17,6 +17,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import org.mozilla.geckoview.AllowOrDeny;
+import org.mozilla.geckoview.ContentBlocking;
 import org.mozilla.geckoview.GeckoRuntime;
 import org.mozilla.geckoview.GeckoRuntimeSettings;
 import org.mozilla.geckoview.GeckoResult;
@@ -55,12 +56,18 @@ public class GeckoWebActivity extends Activity {
 
     private static final int CURSOR_STEP = 48;
     private static final int SCROLL_STEP = 64;
+    private static final float TOUCH_SCROLL_DIST = 150;  // v1.38n 触摸滑动距离（方向键触边一滑的位移）
     private static final int SCROLL_STEP_DRAG = 20;
     private static final int DRAG_HOLD_MS = 500;
     private static final int CURSOR_SIZE = 14;
+    /** v1.38 双击判定窗口：两次确认键按下间隔 < 350ms 视为双击（追加鼠标右键） */
+    private static final int DOUBLE_CLICK_MS = 350;
     /** 焦点触边滚动：光标距视口边缘小于该值后，方向键才触发页面滚动 */
     private static final int EDGE_MARGIN = 100;
     private static final long MIN_LOADING_MS = 800; // 加载过渡页最短显示时长
+
+    // v1.38 双击判定：上一次确认键松开时间
+    private long lastClickUpTime = 0;
 
     // GeckoRuntime 进程级单例（GeckoView 必须共享 runtime）
     private static GeckoRuntime geckoRuntime;
@@ -76,6 +83,10 @@ public class GeckoWebActivity extends Activity {
     private static boolean gvBridgeReady = false;
     /** 轮询通道的待执行指令（App→页面，onMessage 应答下发） */
     private static org.json.JSONObject pendingCmd = null;
+    /** v1.38j：当前活跃 GeckoSession（供 initBridge 装好扩展后补设 session 级消息代理） */
+    private static volatile GeckoSession activeSession = null;
+    /** v1.38j：共享 MessageDelegate——扩展级与 session 级复用同一实例（onConnect/onMessage） */
+    private static WebExtension.MessageDelegate gvMsgDelegate = null;
 
     private static synchronized void initBridge(GeckoRuntime rt) {
         if (gvBridgeReady || rt == null) return;
@@ -111,25 +122,45 @@ public class GeckoWebActivity extends Activity {
                         public void accept(WebExtension ext) {
                             android.util.Log.d("LuoxueTV", "initBridge: install OK id=" + ext.id);
                             gvExtension = ext;
-                            ext.setMessageDelegate(new WebExtension.MessageDelegate() {
-                                @Override
-                                public void onConnect(WebExtension.Port port) {
-                                    android.util.Log.d("LuoxueTV", "initBridge: content script CONNECTED");
-                                    gvPort = port;
-                                    gvBridgeReady = true;
-                                }
+                            // 共享消息代理：扩展级 + session 级双注册（v1.38j）
+                            // 根因：GeckoView 125+ 的 content script connectNative 需 session 级
+                            // delegate，否则消息被 release（logcat: releasePendingMessages session=null）
+                            if (gvMsgDelegate == null) {
+                                gvMsgDelegate = new WebExtension.MessageDelegate() {
+                                    @Override
+                                    public void onConnect(WebExtension.Port port) {
+                                        android.util.Log.d("LuoxueTV", "initBridge: content script CONNECTED");
+                                        gvPort = port;
+                                        gvBridgeReady = true;
+                                    }
 
-                                @Override
-                                public GeckoResult<Object> onMessage(
-                                        String nativeApp, Object message, WebExtension.MessageSender sender) {
-                                    // 页面每 250ms 轮询：有按键指令就应答下发（不依赖 onConnect 的备用通道）
-                                    org.json.JSONObject reply = pendingCmd;
-                                    pendingCmd = null;
-                                    try {
-                                        return GeckoResult.fromValue(reply);
-                                    } catch (Exception e) { return GeckoResult.fromValue(null); }
+                                    @Override
+                                    public GeckoResult<Object> onMessage(
+                                            String nativeApp, Object message, WebExtension.MessageSender sender) {
+                                        // 页面每 250ms 轮询：有按键指令就应答下发（不依赖 onConnect 的备用通道）
+                                        org.json.JSONObject reply = pendingCmd;
+                                        pendingCmd = null;
+                                        if (reply != null) {
+                                            android.util.Log.d("LUOXUE", "onMessage poll DELIVERED type=" + reply.optString("type"));
+                                        }
+                                        try {
+                                            return GeckoResult.fromValue(reply);
+                                        } catch (Exception e) { return GeckoResult.fromValue(null); }
+                                    }
+                                };
+                            }
+                            ext.setMessageDelegate(gvMsgDelegate, "gv_bridge");
+                            // 若已有活跃 session（用户已进站），补设 session 级代理
+                            GeckoSession s = activeSession;
+                            if (s != null) {
+                                try {
+                                    s.getWebExtensionController()
+                                            .setMessageDelegate(ext, gvMsgDelegate, "gv_bridge");
+                                    android.util.Log.d("LuoxueTV", "initBridge: session-level delegate set for active session");
+                                } catch (Exception e) {
+                                    android.util.Log.e("LuoxueTV", "initBridge: session delegate fail " + e.getMessage());
                                 }
-                            }, "gv_bridge");
+                            }
                         }
                     }, new GeckoResult.Consumer<Throwable>() {
                         @Override
@@ -148,6 +179,10 @@ public class GeckoWebActivity extends Activity {
     private int getViewHeight() {
         if (geckoView != null && geckoView.getHeight() > 0) return geckoView.getHeight();
         return getResources().getDisplayMetrics().heightPixels;
+    }
+    private int getViewWidth() {
+        if (geckoView != null && geckoView.getWidth() > 0) return geckoView.getWidth();
+        return getResources().getDisplayMetrics().widthPixels;
     }
     private GeckoSession session;
     private PanZoomController panZoom;
@@ -190,14 +225,39 @@ public class GeckoWebActivity extends Activity {
             geckoRuntime = GeckoRuntime.create(ctx, new GeckoRuntimeSettings.Builder()
                     .allowInsecureConnections(GeckoRuntimeSettings.ALLOW_ALL)
                     .remoteDebuggingEnabled(false)      // 关调试端口，省内存
-                    .extensionsProcessEnabled(false)    // 不启扩展进程，省一个进程的内存
+                    .extensionsProcessEnabled(true)     // v1.38h 实验：扩展进程开启（false 时 content script 从未连接，gvPort=false 实锤）
                     .fissionEnabled(false)              // 关站点隔离，单内容进程
                     .glMsaaLevel(0)                     // 关 MSAA，降 GPU 负载（视频/滚动更顺）
                     .isolatedProcessEnabled(false)      // 内容进程并入主进程，省进程级开销
                     .fontInflation(false)               // 关字体膨胀，防电视字体放大占内存
+                    .contentBlocking(new ContentBlocking.Settings.Builder()
+                            .antiTracking(ContentBlocking.AntiTracking.DEFAULT) // v1.39 拦广告/分析/社交追踪器（Firefox 同款 Disconnect 列表）
+                            .bounceTrackingProtectionMode(ContentBlocking.BounceTrackingProtectionMode.BOUNCE_TRACKING_PROTECTION_MODE_ENABLED_STANDBY) // 防广告跳转追踪
+                            .safeBrowsing(ContentBlocking.SafeBrowsing.DEFAULT) // 防钓鱼/恶意软件
+                            .build())
                     .build());
         }
         return geckoRuntime;
+    }
+
+    /** v1.39 广告域名黑名单（保守匹配，防误拦正常站）：主跳转/iframe 广告域名 */
+    private static final String[] AD_HOST_BLACKLIST = {
+            "doubleclick.net", "googleadservices.com", "googlesyndication.com",
+            "adservice.google.com", "adnxs.com", "adsafeprotected.com",
+            "scorecardresearch.com", "taboola.com", "outbrain.com",
+            "moatads.com", "criteo.com", "lijit.com", "rubiconproject.com"
+    };
+
+    private boolean isAdUrl(String url) {
+        try {
+            String h = android.net.Uri.parse(url).getHost();
+            if (h == null) return false;
+            h = h.toLowerCase();
+            for (String a : AD_HOST_BLACKLIST) {
+                if (h.equals(a) || h.endsWith("." + a)) return true;
+            }
+        } catch (Exception ignored) {}
+        return false;
     }
 
     /** 预热入口：MainActivity 调用，提前加载内核（进程内仅一个 runtime） */
@@ -236,6 +296,19 @@ public class GeckoWebActivity extends Activity {
                 .useTrackingProtection(false)            // 关跟踪保护，省内存
                 .build();
         session = new GeckoSession(sst);
+
+        // v1.38j：session 级消息代理——GeckoView 125+ 的 content script connectNative
+        // 必须通过 WebExtension.SessionController.setMessageDelegate 关联到具体 session，
+        // 仅扩展级 delegate 时消息被 release（实测 logcat: releasePendingMessages session=null）
+        activeSession = session;
+        if (gvExtension != null && gvMsgDelegate != null) {
+            try {
+                session.getWebExtensionController()
+                        .setMessageDelegate(gvExtension, gvMsgDelegate, "gv_bridge");
+            } catch (Exception e) {
+                android.util.Log.w("LUOXUE", "session bridge set fail: " + e);
+            }
+        }
 
         session.setProgressDelegate(new ProgressDelegate() {
             @Override
@@ -288,11 +361,22 @@ public class GeckoWebActivity extends Activity {
             }
         });
 
-        // 导航委托：仅跟踪返回能力；页面跳转默认全部放行
+        // 导航委托：拦截广告域名跳转（v1.39）+ 跟踪返回能力
         session.setNavigationDelegate(new NavigationDelegate() {
             @Override
             public void onCanGoBack(GeckoSession s, boolean cgb) {
                 canGoBack = cgb;
+            }
+
+            @Override
+            public GeckoResult<AllowOrDeny> onLoadRequest(
+                    GeckoSession s, NavigationDelegate.LoadRequest request) {
+                String u = request.uri;
+                if (u != null && isAdUrl(u)) {
+                    android.util.Log.d("LUOXUE", "adblock: deny " + u);
+                    return GeckoResult.fromValue(AllowOrDeny.DENY);
+                }
+                return GeckoResult.fromValue(AllowOrDeny.ALLOW);
             }
         });
 
@@ -377,38 +461,41 @@ public class GeckoWebActivity extends Activity {
         geckoView.requestFocus();
     }
 
-    /** 顶层按键分发：方向键=滚动+光标移动，确认键=点击/长按拖动 */
+    /** 顶层按键分发：方向键=滚动+光标移动，确认键=点击/长按拖动
+     *  v1.38f 入口日志：定位按键是否到达本方法（v1.38e 实测按键发出但无任何输入日志） */
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         int kc = event.getKeyCode();
+        android.util.Log.d("LUOXUE", "dispatch kc=" + kc + " action=" + event.getAction()
+                + " cursorMode=" + cursorMode);
         if (cursorMode) {
             switch (kc) {
                 case KeyEvent.KEYCODE_DPAD_LEFT:
                     if (event.getAction() == KeyEvent.ACTION_DOWN) {
                         if (dragActive) { moveCursor(-CURSOR_STEP, 0); nativeDragMove(cursorX, cursorY); }
                         else if (cursorX > EDGE_MARGIN) { moveCursor(-CURSOR_STEP, 0); nativeMouseHover(cursorX, cursorY); }
-                        else nativeScroll(-SCROLL_STEP, 0);
+                        else nativeTouchScroll(TOUCH_SCROLL_DIST, 0);   // v1.38n 触边=触摸滑动（手指右滑→内容右移→看左边）
                     }
                     return true;
                 case KeyEvent.KEYCODE_DPAD_RIGHT:
                     if (event.getAction() == KeyEvent.ACTION_DOWN) {
                         if (dragActive) { moveCursor(CURSOR_STEP, 0); nativeDragMove(cursorX, cursorY); }
-                        else if (cursorX < getViewHeight() - EDGE_MARGIN) { moveCursor(CURSOR_STEP, 0); nativeMouseHover(cursorX, cursorY); }
-                        else nativeScroll(SCROLL_STEP, 0);
+                        else if (cursorX < getViewWidth() - EDGE_MARGIN) { moveCursor(CURSOR_STEP, 0); nativeMouseHover(cursorX, cursorY); }
+                        else nativeTouchScroll(-TOUCH_SCROLL_DIST, 0);  // 手指左滑→内容左移→看右边
                     }
                     return true;
                 case KeyEvent.KEYCODE_DPAD_UP:
                     if (event.getAction() == KeyEvent.ACTION_DOWN) {
                         if (dragActive) { moveCursor(0, -CURSOR_STEP); nativeDragMove(cursorX, cursorY); }
                         else if (cursorY > EDGE_MARGIN) { moveCursor(0, -CURSOR_STEP); nativeMouseHover(cursorX, cursorY); }
-                        else nativeScroll(0, -SCROLL_STEP);
+                        else nativeTouchScroll(0, TOUCH_SCROLL_DIST);   // 手指下滑→内容下移→看上面
                     }
                     return true;
                 case KeyEvent.KEYCODE_DPAD_DOWN:
                     if (event.getAction() == KeyEvent.ACTION_DOWN) {
                         if (dragActive) { moveCursor(0, CURSOR_STEP); nativeDragMove(cursorX, cursorY); }
                         else if (cursorY < getViewHeight() - EDGE_MARGIN) { moveCursor(0, CURSOR_STEP); nativeMouseHover(cursorX, cursorY); }
-                        else nativeScroll(0, SCROLL_STEP);
+                        else nativeTouchScroll(0, -TOUCH_SCROLL_DIST);  // 手指上滑→内容上移→看下面
                     }
                     return true;
                 default:
@@ -419,6 +506,11 @@ public class GeckoWebActivity extends Activity {
             cursorMode = !cursorMode;
             cursorLayer.setVisibility(cursorMode ? View.VISIBLE : View.GONE);
             if (cursorMode) initCursor();
+            android.util.Log.w("LUOXUE", "MENU toggled cursorMode=" + cursorMode);
+            if (!cursorMode) {
+                android.widget.Toast.makeText(this, "光标模式：关（按菜单键恢复）",
+                        android.widget.Toast.LENGTH_SHORT).show();
+            }
             return true;
         }
         if (kc == KeyEvent.KEYCODE_DPAD_CENTER
@@ -441,8 +533,22 @@ public class GeckoWebActivity extends Activity {
                         }
                         nativeDragEnd(cursorX, cursorY);
                     } else {
-                        // 短按=点击：原生触摸注入（内核手势入口，v1.36d）
+                        // v1.38b 单击立即执行左键（零延迟，杜绝误判）；350ms 内再按=双击，追加鼠标右键
+                        long now = android.os.SystemClock.uptimeMillis();
+                        boolean isDoubleClick = (now - lastClickUpTime < DOUBLE_CLICK_MS);
+                        lastClickUpTime = now;
+                        // 左键：原生鼠标序列 + 触摸序列（v1.36d/1.38 串行）
                         nativeClick(cursorX, cursorY);
+                        // JS DOM 级点击兜底（v1.37）
+                        dragHandler.postDelayed(new Runnable() {
+                            @Override public void run() {
+                                clickJsAt(cursorX, cursorY);
+                            }
+                        }, 400);
+                        if (isDoubleClick) {
+                            // 双击=追加鼠标右键（对左键点击无反应的站点，右键 contextmenu 生效）
+                            rightClickAt(cursorX, cursorY);
+                        }
                     }
                 }
                 return true;
@@ -457,44 +563,92 @@ public class GeckoWebActivity extends Activity {
     // 所有交互改走 WebExtension Port：postMessage 给 content script，由扩展 JS 操作 DOM。
     // 坐标直接传 View 物理像素，content.js 内 ÷devicePixelRatio 换算 CSS 像素。
 
-    /** v1.36c 原生滚动：PanZoomController.scrollBy 直驱内核，不依赖任何 JS/消息通道 */
-    private void nativeScroll(int dx, int dy) {
-        if (panZoom == null) return;
+    /** setAxisValue 是隐藏 API（SDK stub 无此方法），用反射设置滚轮滚动量 */
+    private static void setAxisReflect(MotionEvent e, int axis, float value) {
         try {
-            if (dy != 0) {
-                panZoom.scrollBy(ScreenLength.fromPixels(0), ScreenLength.fromPixels(dy));
+            MotionEvent.class.getMethod("setAxisValue", int.class, float.class)
+                    .invoke(e, axis, value);
+        } catch (Throwable ignored) {}
+    }
+
+    /** v1.36c 原生滚动：PanZoomController.scrollBy 直驱内核
+     *  v1.38e：scrollBy 在内部滚动容器站失效（白嫖者联盟/青空次元，logcat 证实调用但页面不动）
+     *          → 换鼠标滚轮主通道（ACTION_SCROLL，PC 站标准滚动，浏览器在光标下自动选滚动容器） */
+    private void nativeScroll(int dx, int dy) {
+        if (panZoom == null) {
+            android.util.Log.w("LUOXUE", "nativeScroll skipped: panZoom null");
+            return;
+        }
+        try {
+            long now = android.os.SystemClock.uptimeMillis();
+            MotionEvent e = MotionEvent.obtain(now, now, MotionEvent.ACTION_SCROLL,
+                    cursorX, cursorY, 0f, 0f, 0, 1f, 1f, 0, 0);
+            try {
+                e.setSource(android.view.InputDevice.SOURCE_MOUSE);
+                if (dy != 0) setAxisReflect(e, MotionEvent.AXIS_VSCROLL, (float) dy);
+                if (dx != 0) setAxisReflect(e, MotionEvent.AXIS_HSCROLL, (float) dx);
+                panZoom.onMouseEvent(e);
+                android.util.Log.d("LUOXUE", "nativeScroll wheel v=" + dy + " h=" + dx
+                        + " at " + cursorX + "," + cursorY);
+            } catch (Throwable t) {
+                android.util.Log.w("LUOXUE", "nativeScroll wheel fail: " + t);
+            } finally {
+                e.recycle();
             }
-            if (dx != 0) {
-                panZoom.scrollBy(ScreenLength.fromPixels(dx), ScreenLength.fromPixels(0));
-            }
+        } catch (Exception ex) {
+            android.util.Log.w("LUOXUE", "nativeScroll error: " + ex);
+        }
+    }
+
+    /** v1.36d 原生点击：PanZoomController 注入触摸+鼠标序列（内核手势入口）
+     *  v1.38c：鼠标 DOWN/UP 同步发送（间隔 16ms=1帧），消除按钮残留窗口
+     *  v1.38d：删除触摸阶段——触摸 DOWN 延迟注入会与方向键滚动冲突
+     *          （触摸手势卡"按住"时 scrollBy 被忽略 = 滚动回归根因）。
+     *          点击纯鼠标序列（v1.34 验证鼠标注入可合成 click），JS 兜底走 bridge */
+    private void nativeClick(int x, int y) {
+        if (panZoom == null) {
+            android.util.Log.w("LUOXUE", "nativeClick skipped: panZoom null");
+            return;
+        }
+        try {
+            long now = android.os.SystemClock.uptimeMillis();
+            android.util.Log.d("LUOXUE", "nativeClick mouse at " + x + "," + y);
+            injectMouseEvent(MotionEvent.ACTION_HOVER_MOVE, x, y, 0, now);
+            injectMouseEvent(MotionEvent.ACTION_DOWN, x, y, 1, now);
+            injectMouseEvent(MotionEvent.ACTION_UP, x, y, 0, now + 16);
         } catch (Exception ignored) {}
     }
 
-    /** v1.36d 原生点击：PanZoomController.onTouchEvent 注入完整触摸序列（内核手势入口） */
-    private void nativeClick(int x, int y) {
+    /** v1.38 鼠标右键点击（双击确认键触发）：原生右键序列 + JS contextmenu 兜底
+     *  buttons=2 为 BUTTON_SECONDARY，内核将合成 contextmenu 事件
+     *  v1.38c：DOWN/UP 同步发送（同左键，消除按钮残留窗口） */
+    private void rightClickAt(int x, int y) {
         if (panZoom == null) return;
         try {
             long now = android.os.SystemClock.uptimeMillis();
-            MotionEvent down = MotionEvent.obtain(now, now, MotionEvent.ACTION_DOWN, x, y, 0);
-            MotionEvent up = MotionEvent.obtain(now, now + 80, MotionEvent.ACTION_UP, x, y, 0);
-            MotionEvent[] evs = { down, up };
-            for (MotionEvent e : evs) {
-                try {
-                    e.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
-                } catch (Throwable t1) {
-                    try {
-                        MotionEvent.class.getMethod("setSource", int.class)
-                                .invoke(e, android.view.InputDevice.SOURCE_TOUCHSCREEN);
-                    } catch (Throwable t2) {}
-                }
-            }
-            panZoom.onTouchEvent(down);
-            panZoom.onTouchEvent(up);
-            down.recycle();
-            up.recycle();
-            // 同时注入鼠标点击序列：兼容吃鼠标事件（hover 菜单/鼠标 UI）的站点
-            nativeMouseClick(x, y);
+            injectMouseEvent(MotionEvent.ACTION_HOVER_MOVE, x, y, 0, now);
+            injectMouseEvent(MotionEvent.ACTION_DOWN, x, y, 2, now);
+            injectMouseEvent(MotionEvent.ACTION_UP, x, y, 0, now + 16);
         } catch (Exception ignored) {}
+        // JS contextmenu 兜底（v1.38）：content script 触发 mousedown/mouseup/contextmenu(button=2)
+        // v1.38g：evaluateJavascript 直连为主，扩展通道双保险
+        String js = "(function(px,py){var d=window.devicePixelRatio||1,x=px/d,y=py/d;"
+                + "var el=document.elementFromPoint(x,y);if(!el)return;var t=el;"
+                + "for(var i=0;i<8&&t;i++,t=t.parentElement){"
+                + "if(t.tagName==='A'||t.tagName==='BUTTON'||t.tagName==='INPUT'||t.tagName==='SELECT'"
+                + "||(t.getAttribute&&t.getAttribute('oncontextmenu')))break;}"
+                + "if(!t)t=el;var r=t.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;"
+                + "function f(n,o){try{t.dispatchEvent(new MouseEvent(n,o));}catch(e){}}"
+                + "f('mousedown',{bubbles:true,cancelable:true,clientX:cx,clientY:cy,view:window,button:2,buttons:2});"
+                + "f('mouseup',{bubbles:true,cancelable:true,clientX:cx,clientY:cy,view:window,button:2,buttons:0});"
+                + "f('contextmenu',{bubbles:true,cancelable:true,clientX:cx,clientY:cy,view:window,button:2,buttons:0});"
+                + "})(" + x + "," + y + ");";
+        jsEval(js);
+        dragHandler.postDelayed(new Runnable() {
+            @Override public void run() {
+                postBridge("rightClick", x, y, 0, 0, 3);
+            }
+        }, 400);
     }
 
     /** 鼠标事件注入（PanZoomController.onMouseEvent 官方鼠标入口）
@@ -599,10 +753,45 @@ public class GeckoWebActivity extends Activity {
         } catch (Exception ignored) {}
     }
 
+    /** v1.38n 触摸滑动滚动（v1.36 验证过的电视最有效滚动手势）：
+     *  方向键触边 → 注入 touch DOWN→6 步 MOVE→UP 滑动序列。
+     *  触摸滑动由浏览器命中测试自动选择滚动容器（内部容器也能滚），
+     *  与 scrollBy（仅文档级）/鼠标滚轮（电视端 GeckoView 不响应 ACTION_SCROLL）不同。
+     *  dx/dy 为手指滑动位移：手指向上滑 dy<0 → 内容上移 → 露出下面内容。 */
+    private void nativeTouchScroll(float dx, float dy) {
+        if (panZoom == null) return;
+        try {
+            long now = android.os.SystemClock.uptimeMillis();
+            float x0 = cursorX, y0 = cursorY;
+            MotionEvent down = MotionEvent.obtain(now, now, MotionEvent.ACTION_DOWN, x0, y0, 0);
+            down.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+            panZoom.onTouchEvent(down);
+            // 分 6 步滑动（模拟真实手指拖动，避免单步大跳不被识别为手势）
+            for (int i = 1; i <= 6; i++) {
+                MotionEvent move = MotionEvent.obtain(now, now + i * 16L,
+                        MotionEvent.ACTION_MOVE, x0 + dx * i / 6f, y0 + dy * i / 6f, 0);
+                move.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+                panZoom.onTouchEvent(move);
+                move.recycle();
+            }
+            MotionEvent up = MotionEvent.obtain(now, now + 6 * 16L + 60,
+                    MotionEvent.ACTION_UP, x0 + dx, y0 + dy, 0);
+            up.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+            panZoom.onTouchEvent(up);
+            up.recycle();
+            down.recycle();
+            android.util.Log.d("LUOXUE", "touchScroll dx=" + dx + " dy=" + dy + " at " + x0 + "," + y0);
+        } catch (Exception e) {
+            android.util.Log.w("LUOXUE", "touchScroll err " + e);
+        }
+    }
+
     private static final String BRIDGE_NAME = "gv_bridge";
     /** 向页面 content script 发送操作消息（port 未就绪时 300ms 内重试 5 次） */
     private void postBridge(final String type, final int x, final int y,
                             final int dx, final int dy, final int retry) {
+        android.util.Log.d("LUOXUE", "postBridge type=" + type + " x=" + x + " y=" + y
+                + " gvPort=" + (gvPort != null) + " retry=" + retry);
         // 轮询通道：立即入队，页面下次 poll 时取走（主通道）
         try {
             org.json.JSONObject m = new org.json.JSONObject();
@@ -636,14 +825,46 @@ public class GeckoWebActivity extends Activity {
         } catch (Exception ignored) {}
     }
 
-    /** 点击：扩展内 elementFromPoint + 触发 pointer/mouse/touch 全套事件 + <a> 跳转兜底 */
-    private void clickJsAt(int x, int y) {
-        postBridge("click", x, y, 0, 0, 5);
+    /** v1.38g JS 兜底主通道：GeckoSession.evaluateJavascript 直连页面（GeckoView 官方 JS 求值 API）
+     *  背景：extensionsProcessEnabled(false) 下 WebExtension content script 从未连接
+     *  （v1.38d/e/f logcat 实锤 gvPort=false，JS 兜底全程静默失效），改走内核直连，不依赖扩展进程。
+     *  v1.38h：GeckoView 158 实测无 evaluateJavascript API（编译报错，新版已移除），
+     *          唯一 JS 通道仍是 WebExtension → 恢复 postBridge 单通道，扩展进程改开（v1.38h 实验）。 */
+    private void jsEval(String js) {
+        // GeckoView 158 无 evaluateJavascript，此方法保留为空实现（占位），JS 兜底全走 postBridge
+        android.util.Log.d("LUOXUE", "jsEval unavailable in GeckoView 158, use postBridge");
     }
 
-    /** 滚动：扩展找光标下可滚动祖先 scrollBy；无则滚主文档 */
+    /** 点击 JS：elementFromPoint + pointer/mouse/touch 全套事件 + A 链接强制当前页跳转（MacCms _blank 兜底）
+     *  坐标：Java 传 View 物理像素，页面内 ÷devicePixelRatio 转 CSS 像素 */
+    private void clickJsAt(int x, int y) {
+        String js = "(function(px,py){var d=window.devicePixelRatio||1,x=px/d,y=py/d;"
+                + "var el=document.elementFromPoint(x,y);if(!el)return;var t=el;"
+                + "for(var i=0;i<8&&t;i++,t=t.parentElement){"
+                + "if(t.tagName==='A'||t.tagName==='BUTTON'||t.tagName==='INPUT'||t.tagName==='SELECT'"
+                + "||(t.getAttribute&&(t.getAttribute('role')==='button'||t.getAttribute('onclick'))))break;}"
+                + "if(!t)t=el;var r=t.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;"
+                + "function f(n,o){try{t.dispatchEvent(new MouseEvent(n,o));}catch(e){}}"
+                + "var o={bubbles:true,cancelable:true,clientX:cx,clientY:cy,view:window,button:0,buttons:1};"
+                + "f('pointerdown',o);f('mousedown',o);f('pointerup',o);f('mouseup',o);f('click',o);"
+                + "if(t.tagName==='A'&&t.href){try{"
+                + "if(t.target&&t.target!=='_self'){try{t.target='_self';}catch(e){}}"
+                + "if(location.href.split('#')[0]!==t.href.split('#')[0])location.href=t.href;}catch(e){}}"
+                + "})(" + x + "," + y + ");";
+        jsEval(js);
+        postBridge("click", x, y, 0, 0, 3); // 扩展通道双保险
+    }
+
+    /** 滚动 JS：找光标下可滚动祖先 scrollBy；无则滚主文档 */
     private void scrollJsAt(int x, int y, int dx, int dy) {
-        postBridge("scroll", x, y, dx, dy, 5);
+        String js = "(function(px,py,dx,dy){var d=window.devicePixelRatio||1,x=px/d,y=py/d;"
+                + "var el=document.elementFromPoint(x,y);if(!el)return;var t=el,s=null;"
+                + "for(var i=0;i<8&&t;i++,t=t.parentElement){"
+                + "if(t.scrollHeight>t.clientHeight+1||t.scrollWidth>t.clientWidth+1){s=t;break;}}"
+                + "if(s){s.scrollBy(dx,dy);}else{window.scrollBy(dx,dy);}"
+                + "})(" + x + "," + y + "," + dx + "," + dy + ");";
+        jsEval(js);
+        postBridge("scroll", x, y, dx, dy, 3);
     }
 
     /** 悬停：模拟 mouseover/mouseenter */
@@ -748,6 +969,7 @@ public class GeckoWebActivity extends Activity {
     @Override
     protected void onDestroy() {
         dragHandler.removeCallbacks(dragStartRunnable);
+        if (activeSession == session) activeSession = null;
         if (session != null) {
             try { session.close(); } catch (Exception e) {}
             session = null;
