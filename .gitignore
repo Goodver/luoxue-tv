@@ -1,0 +1,24 @@
+# Gradle
+.gradle/
+build/
+app/build/
+local.properties
+
+# IDE
+.idea/
+*.iml
+
+# 签名密钥（绝不提交）
+*.jks
+*.keystore
+
+# 本地缓存/构建产物
+*.log
+*.apk
+*.zip
+*.jar
+*.png
+
+# 系统
+.DS_Store
+Thumbs.db

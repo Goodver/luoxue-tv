@@ -1,0 +1,306 @@
+{
+ "version": "2026-10-19",
+ "items": [
+  {
+   "name": "No影视",
+   "url": "https://novipnoad.org/",
+   "desc": "海外影视剧资源聚合站（需梯子）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "注视影视",
+   "url": "https://gaze.red/",
+   "desc": "国内海外影视剧资源（需梯子）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "搜TV啦",
+   "url": "https://www.sotvla.cc/",
+   "desc": "国内海外高清影视剧资源",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "白嫖者联盟",
+   "url": "https://www.tdgo.shop",
+   "desc": "热门热播剧，无广告速度快（需梯子）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "蛋蛋魔法",
+   "url": "https://ddmf.net",
+   "desc": "国内外热播剧，有福利伦理片（需梯子）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "青空次元",
+   "url": "https://www.sorani.net",
+   "desc": "网友称最夯动漫在线站",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "APP影院",
+   "url": "https://www.appmovie.art",
+   "desc": "国内外热播剧，纯净无广告",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "爱电影",
+   "url": "https://kuhh4jo.com",
+   "desc": "最新热门电影/电视剧（需梯子）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "937影视",
+   "url": "https://www.937tv.vip",
+   "desc": "看全网影视剧（需梯子）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "爱壹帆",
+   "url": "https://iyf.tv",
+   "desc": "海外华人影视站（需梯子/有VIP限制）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "厂长资源",
+   "url": "https://www.czzymovie.com",
+   "desc": "高清、秒播不卡顿，有广告",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "LIBVIO",
+   "url": "https://libviobd.com",
+   "desc": "海外影视的老牌网站，发布页www.libvio.app",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "Auete影视",
+   "url": "https://www.aeete.com",
+   "desc": "蓝光超清精品影视，发布页auete.pro",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "电影人生",
+   "url": "https://dyrs.tv",
+   "desc": "高清电影在线观看",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "奈飞工厂",
+   "url": "https://www.netflixgc.com",
+   "desc": "最新美剧，无广告（需梯子）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "奈菲影视",
+   "url": "https://www.nfyingshi.com",
+   "desc": "热门美剧（需梯子/有VIP限制）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "PPnix",
+   "url": "https://www.ppnix.com/cn/",
+   "desc": "在线观看电影电视剧",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "独播库",
+   "url": "https://www.dbku.tv",
+   "desc": "页面无广告，纯净",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "布布追剧",
+   "url": "https://bubuzhuiju.com",
+   "desc": "速度快，有广告能接受",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "影猫仓库",
+   "url": "https://www.ymck.pro",
+   "desc": "热门影视剧，有广告能接受",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "爱看机器人",
+   "url": "https://www1.aikanbot.com",
+   "desc": "热门电影电视剧（有跳转广告）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "91毒舌",
+   "url": "https://www.duse0.com/",
+   "desc": "最新Netflix新剧、4K高清（可访问）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "好好看",
+   "url": "https://www.hhkan2.com/",
+   "desc": "4K高清Netflix新剧（可访问需梯子）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "4k影视",
+   "url": "https://www.4kvm.cc/",
+   "desc": "有广告能接受（需梯子/VIP限制）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "饭搭子影视",
+   "url": "https://fdzys.com",
+   "desc": "最新热门电影电视剧动漫综艺",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "SA视频",
+   "url": "https://www.lsjys11.com/",
+   "desc": "最新电影电视剧动漫综艺（可访问）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "剧OK",
+   "url": "https://juok3.top/",
+   "desc": "最新电视剧、最新电影",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "宅男影视",
+   "url": "https://zndy.top/",
+   "desc": "想看就看",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "剧踪影院",
+   "url": "https://www.juzong01.me/",
+   "desc": "海内外 SVIP 超前更新",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "简云影视",
+   "url": "https://jianyunys.com/",
+   "desc": "纯净无广告/1080P高清秒播",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "片库",
+   "url": "https://4k01.pianku.online/",
+   "desc": "纯净无广告/1080P高清秒播",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "66 大片网",
+   "url": "https://www.77dpw.vip/",
+   "desc": "免费电影在线观看",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "嘀嗒影视",
+   "url": "https://www.didahd.xyz/",
+   "desc": "高分电影聚集地，超清秒播",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "追影",
+   "url": "https://zhuiying3.cc/",
+   "desc": "蓝光高清、无广告免费在线秒播",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "歪比巴卜",
+   "url": "https://wbbb1.com/",
+   "desc": "高清视频免费在线观看（可访问）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "开心影院",
+   "url": "https://www.kxyy1.cc/",
+   "desc": "最新电影热播电视剧",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "豆花电影网",
+   "url": "https://dhvideo.cc/",
+   "desc": "最新免费电影_在线观看",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "ZIP0",
+   "url": "https://zip0.com/?r=KBDIG8",
+   "desc": "在线影视搜索与播放",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "爱盼",
+   "url": "https://www.aipan.me/",
+   "desc": "4K影视资源聚合站",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "可可影视",
+   "url": "https://www.kkys14.com/",
+   "desc": "最新Netflix新剧（可访问）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "樱之空",
+   "url": "https://skr.skr1.cc:666/",
+   "desc": "国内外各种动漫都比较齐全",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "洛雪TV",
+   "url": "https://tv.lxyy.club/",
+   "desc": "4K无广告（@anyongki贡献）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "西瓜影视",
+   "url": "https://www.kanmovie.com/",
+   "desc": "没有搜不到的资源（@miaodongsu7贡献）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  }
+ ]
+}
