@@ -17,7 +17,6 @@ local.properties
 *.apk
 *.zip
 *.jar
-*.png
 
 # 系统
 .DS_Store
