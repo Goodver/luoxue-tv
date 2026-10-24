@@ -66,7 +66,7 @@ public class MainActivity extends Activity {
 
     // 远程数据源（本仓库 resources/resources.json，自主可控）
     private static final String REMOTE_SOURCE =
-            "https://raw.githubusercontent.com/higite/luoxue-tv/main/resources/resources.json";
+            "https://raw.githubusercontent.com/Goodver/luoxue-tv/main/resources/resources.json";
 
     private static final String PREFS = "luoxue_nav";
     private static final String KEY_PINNED = "pinned_urls";
