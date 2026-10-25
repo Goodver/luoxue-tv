@@ -1,5 +1,5 @@
 {
- "version": "2026-10-19",
+ "version": "2026-10-25",
  "items": [
   {
    "name": "No影视",
@@ -299,6 +299,13 @@
    "name": "西瓜影视",
    "url": "https://www.kanmovie.com/",
    "desc": "没有搜不到的资源（@miaodongsu7贡献）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "看看鸭",
+   "url": "https://www.kankanya.me/",
+   "desc": "高清无广告新站",
    "cat": "online_video",
    "tag": "在线影视"
   }
