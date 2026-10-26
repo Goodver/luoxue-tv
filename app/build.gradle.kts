@@ -11,8 +11,8 @@ android {
         applicationId = "com.luoxue.tv"
         minSdk = 26
         targetSdk = 37
-        versionCode = 54
-        versionName = "1.39"
+        versionCode = 64
+        versionName = "1.39.5"
     }
 
     signingConfigs {

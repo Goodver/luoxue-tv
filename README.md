@@ -7,20 +7,21 @@
 - **全屏导航页**：无地址栏、无状态栏、无任何浏览器 UI，纯沉浸式体验
 - **站点清单**：内置 43 个在线影视站点（数据来自 [awesome-zhuiju-free](https://github.com/laoma528/awesome-zhuiju-free) 的 online_video 分类）
 - **可用性检测**：每个站点带渐变圆形状态标签——**绿 = 可访问，红 = 不可访问**（检测中为灰）
-- **远程数据更新**：点"检测更新"从本仓库的 [resources/resources.json](resources/resources.json) 拉取最新站点清单并写入本地 JSON，程序始终读取本地数据；拉取失败自动沿用本地已有清单。更新站点只需修改仓库中的该 JSON 文件，APP 端无需重装
+- **远程数据更新**：点"检测更新"从远程拉取最新站点清单并写入本地 JSON，程序始终读取本地数据；拉取失败自动沿用本地已有清单。**多源 fallback**（jsDelivr CDN → github.io → raw → 加速镜像，每源带时间戳绕过 CDN 缓存），国内网络下任意一源可用即更新成功。更新站点只需修改仓库中的该 JSON 文件，APP 端无需重装
 - **置顶收藏**：触屏长按卡片置顶 / 取消置顶（★ 标识），置顶站点独立分区显示，状态本地持久化
 - **平板自适应**：按屏幕宽度自动切换列数（手机 2 列 / 小平板 3 列 / 平板 4 列 / 大平板 5 列），字号、间距、图标同步等比放大
 - **电视 / 盒子适配**：自动识别 Android TV 环境，启用大屏 UI（≥5 列 + 1.4 倍放大）与完整遥控器导航——方向键移动焦点、确认键进站、菜单键置顶、返回键回退
-- **GeckoView 158 现代内核**：进站页使用 Mozilla GeckoView（Firefox 同源引擎），站点按桌面宽度 + 桌面 UA 渲染，兼容现代 Web 标准，修复旧内核下多个站点排版错乱 / 黑屏 / 图片不加载 / 视频无法播放的问题
+- **GeckoView 158 现代内核**：进站页使用 Mozilla GeckoView（Firefox 同源引擎），站点按桌面宽度渲染，兼容现代 Web 标准，修复旧内核下多个站点排版错乱 / 黑屏 / 图片不加载 / 视频无法播放的问题
+- **UA + 浏览器特征伪装**：进站 UA 与电脑端桌面版（Electron/Chromium 156）逐字符一致，并伪装 `window.chrome` / `platform=Win32` / `vendor=Google Inc.`——规避站点广告系统按 UA / 浏览器特征识别电视端并定向投放广告（auete / 蛋蛋魔法广告实测消除）
 - **遥控器输入桥**：进站后方向键驱动**虚拟光标 + 触摸滑动**（触边滚动，任意滚动容器均可滚），确认键零延迟模拟**鼠标左键单击**、双击追加**右键**（DOM 级点击兜底 + WebExtension 注入，适配不同站点的点击触发规则）；菜单键切换光标开关，任意网页按钮（如全屏播放）都能选中
-- **内核级广告拦截**：ContentBlocking（广告 / 分析 / 社交追踪器，Disconnect 列表）+ 防广告跳转追踪 + 防钓鱼；导航请求黑名单拦截 13 个广告大厂域名
+- **内核级广告拦截**：ContentBlocking（广告 / 分析 / 社交追踪器，Disconnect 列表）+ 防广告跳转追踪 + 防钓鱼；导航请求黑名单拦截广告域名（13 个广告大厂 + 站长实测域名如 yk392.com）；广告容器 CSS 隐藏（.ads/.footerad/.mac_ad，站长实测右下角漂浮广告消除）
 - **正式签名版**：release 包使用独立密钥库签名，可覆盖升级
 
 ## 下载
 
 | 版本 | 文件 | 说明 |
 | --- | --- | --- |
-| v1.39 正式版 | [luoxue-tv-v1.39.apk](https://github.com/Goodver/luoxue-tv/releases/download/v1.39/luoxue-tv-v1.39.apk) | GeckoView 158 内核 · armeabi-v7a · Android 9+，广告拦截 + 全站滚屏/点击修复，签名版 |
+| v1.39.5 正式版 | [luoxue-tv-v1.39.5.apk](https://github.com/Goodver/luoxue-tv/releases/download/v1.39.5/luoxue-tv-v1.39.5.apk) | GeckoView 158 内核 · armeabi-v7a · Android 9+，全量广告拦截（UA伪装+域名黑名单+广告容器隐藏）+ 检测更新多源拉取修复，签名版 |
 | 历史版本 | [Releases 页面](https://github.com/Goodver/luoxue-tv/releases) | 全部历史版本 APK |
 
 > 安装：电视端通过 `adb install -r` 安装（推荐）或文件管理器直接打开 APK。armeabi-v7a 架构，Android 9.0 及以上。
@@ -75,6 +76,11 @@ luoxue-tv/
 
 ## 版本历史
 
+- **v1.39.5**（2026-10）：检测更新多源拉取修复——国内网络下 raw.githubusercontent.com 常被 DNS 污染导致拉取失败，改为 jsDelivr CDN → github.io → raw → 加速镜像四源按序 fallback，每源带时间戳绕过 CDN 缓存，任一源可用即更新成功
+- **v1.39.4**（2026-10）：广告容器 CSS 隐藏（.ads/.footerad/.mac_ad，站长实测厂长资源右下角漂浮广告消除）
+- **v1.39.3**（2026-10）：广告域名黑名单新增 yk392.com（厂长资源"开云体育"跳转拦截）
+- **v1.39.2**（2026-10）：UA 对齐电脑桌面版实测值（Electron/Chromium 156 完整字符串）+ 页面主世界伪装 window.chrome / platform=Win32 / vendor=Google Inc.——站长实测 auete 影视、蛋蛋魔法广告消失（站点广告系统按 UA / 浏览器特征识别电视端定向投放）
+- **v1.39.1**（2026-10）：UA 修正（去 Edg 后缀、Chrome/156，站点按桌面版渲染）
 - **v1.39**（2026-10）：内核级广告拦截——ContentBlocking（广告/分析/社交追踪器）+ 防广告跳转追踪 + 防钓鱼，导航请求黑名单拦截 13 个广告域名；输入桥终版——扩展桥三要素（扩展进程 + geckoViewAddons + nativeMessagingFromContent）修通，JS 点击兜底全面生效；滚屏改触摸滑动注入（方向键触边即滚）；window.open 劫持改当前页导航（JS 开新窗站点可播）
 - **v1.38**（2026-10）：确认键双击追加鼠标右键；扩展桥修通（content script CONNECTED），点击 + 滚动全链路打通
 - **v1.36**（2026-10）：原生 PanZoom 输入桥——滚动 / 点击 / 拖动全通

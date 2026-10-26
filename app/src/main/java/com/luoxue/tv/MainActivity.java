@@ -64,9 +64,15 @@ public class MainActivity extends Activity {
         }
     }
 
-    // 远程数据源（本仓库 resources/resources.json，自主可控）
-    private static final String REMOTE_SOURCE =
-            "https://raw.githubusercontent.com/Goodver/luoxue-tv/main/resources/resources.json";
+    // 远程数据源（多源 fallback：jsDelivr CDN → github.io → raw → 镜像加速）
+    // 国内网络 raw.githubusercontent.com 常被 DNS 污染，电视端拉取失败时按顺序尝试下一源；
+    // jsDelivr 每次追加时间戳强制回源，避免 24h CDN 缓存。
+    private static final String[] REMOTE_SOURCES = {
+            "https://cdn.jsdelivr.net/gh/Goodver/luoxue-tv@main/resources/resources.json",
+            "https://goodver.github.io/resources/resources.json",
+            "https://raw.githubusercontent.com/Goodver/luoxue-tv/main/resources/resources.json",
+            "https://ghfast.top/https://raw.githubusercontent.com/Goodver/luoxue-tv/main/resources/resources.json"
+    };
 
     private static final String PREFS = "luoxue_nav";
     private static final String KEY_PINNED = "pinned_urls";
@@ -282,7 +288,7 @@ public class MainActivity extends Activity {
         checker.execute(new Runnable() {
             @Override
             public void run() {
-                String data = tryFetch(REMOTE_SOURCE);
+                String data = tryFetchRemote();
                 if (data == null) return;
                 saveRawJson(data);
                 final List<Site> fresh = parseSites(readCache());
@@ -304,7 +310,7 @@ public class MainActivity extends Activity {
         checker.execute(new Runnable() {
             @Override
             public void run() {
-                String data = tryFetch(REMOTE_SOURCE);
+                String data = tryFetchRemote();
                 if (data != null) saveRawJson(data);
                 final List<Site> fresh = parseSites(readCache());
                 runOnUiThread(new Runnable() {
@@ -318,6 +324,16 @@ public class MainActivity extends Activity {
                 });
             }
         });
+    }
+
+    /** 多源拉取：按序尝试各源，第一个成功即返回；每源带时间戳防 CDN 缓存 */
+    private String tryFetchRemote() {
+        long t = System.currentTimeMillis();
+        for (String base : REMOTE_SOURCES) {
+            String data = tryFetch(base + "?t=" + t);
+            if (data != null) return data;
+        }
+        return null;
     }
 
     /** 拉取 URL 内容（限 512KB） */

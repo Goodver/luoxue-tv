@@ -49,10 +49,12 @@ import org.mozilla.geckoview.WebExtensionController;
  */
 public class GeckoWebActivity extends Activity {
 
-    // 桌面 Edge UA：与电脑端完全一致
+    // 桌面 UA：与电脑端桌面版 app（Electron 45 = Chromium 156.0.8078.48）实测完全一致
+    // 实测值：Mozilla/5.0 ... luoxue-tv-nav-desktop/1.0.10 Chrome/156.0.8078.48 Electron/45.0.0 Safari/537.36
     private static final String DESKTOP_UA =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-            + "(KHTML, like Gecko) Chrome/135.0.7049.42 Safari/537.36 Edg/135.0.0.0";
+            + "(KHTML, like Gecko) luoxue-tv-nav-desktop/1.0.10 "
+            + "Chrome/156.0.8078.48 Electron/45.0.0 Safari/537.36";
 
     private static final int CURSOR_STEP = 48;
     private static final int SCROLL_STEP = 64;
@@ -245,7 +247,8 @@ public class GeckoWebActivity extends Activity {
             "doubleclick.net", "googleadservices.com", "googlesyndication.com",
             "adservice.google.com", "adnxs.com", "adsafeprotected.com",
             "scorecardresearch.com", "taboola.com", "outbrain.com",
-            "moatads.com", "criteo.com", "lijit.com", "rubiconproject.com"
+            "moatads.com", "criteo.com", "lijit.com", "rubiconproject.com",
+            "yk392.com"   // v1.39.3 厂长资源广告（用户实测域名，含 www.yk392.com）
     };
 
     private boolean isAdUrl(String url) {

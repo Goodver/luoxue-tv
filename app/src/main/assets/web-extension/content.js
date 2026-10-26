@@ -2,6 +2,36 @@
 // 主输入走 GeckoView 原生 PanZoomController（scrollBy/onTouchEvent），
 // 本扩展仅作为备用：若原生通道失效可回退到 connectNative 消息。
 (function () {
+  // v1.39.2：浏览器特征伪装——站点广告 JS 按 window.chrome/platform/vendor 区分"真 Chrome"投广告。
+  // 桌面版 app（Electron 45）实测特征：window.chrome 为空对象、platform=Win32、vendor=Google Inc.、hw=16。
+  // content script 运行在 isolated world，必须注入 <script> 到页面主世界，且须先于页面脚本执行。
+  try {
+    (function () {
+      var s = document.createElement('script');
+      s.type = 'text/javascript';
+      s.textContent = '(function(){' +
+        'try{if(!window.chrome){window.chrome={};}}catch(e){}' +
+        'try{Object.defineProperty(navigator,"vendor",{get:function(){return "Google Inc."}});}catch(e){}' +
+        'try{Object.defineProperty(navigator,"platform",{get:function(){return "Win32"}});}catch(e){}' +
+        'try{Object.defineProperty(navigator,"hardwareConcurrency",{get:function(){return 16}});}catch(e){}' +
+        '})();';
+      var p = document.documentElement || document.head || document.body;
+      if (p) { p.appendChild(s); try { s.parentNode.removeChild(s); } catch (e) {} }
+    })();
+  } catch (e) {}
+
+  // v1.39.4：广告容器 CSS 隐藏——4kcz 等 mibt 模板站的固定漂浮广告容器（.ads/.footerad）。
+  // 仅隐藏广告容器类，不碰页面布局/脚本/导航；.ads 为影视站模板通用广告位类名。
+  try {
+    (function () {
+      var st = document.createElement('style');
+      st.type = 'text/css';
+      st.textContent = '.ads,.footerad,.mac_ad{display:none !important;}';
+      var p = document.documentElement || document.head;
+      if (p) { p.appendChild(st); }
+    })();
+  } catch (e) {}
+
   var PORT_NAME = 'gv_bridge';
   var port = null;
 
