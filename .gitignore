@@ -1,0 +1,26 @@
+# Gradle
+.gradle/
+build/
+app/build/
+
+# 本机配置（含本机 SDK 路径，不提交）
+local.properties
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# 签名密钥（绝不提交）
+*.jks
+*.keystore
+
+# 发布包（APK 由 GitHub Releases 提供）
+apk/
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 本地缓存
+*.log
