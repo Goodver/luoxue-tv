@@ -2,6 +2,20 @@
  "version": "2026-10-31",
  "items": [
   {
+   "name": "看看鸭",
+   "url": "https://www.kankanya.me/",
+   "desc": "高清无广告新站",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "No影视",
+   "url": "https://novipnoad.org/",
+   "desc": "海外影视剧资源聚合站（需梯子）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
    "name": "注视影视",
    "url": "https://gaze.red/",
    "desc": "国内海外影视剧资源（需梯子）",
@@ -12,6 +26,20 @@
    "name": "搜TV啦",
    "url": "https://www.sotvla.cc/",
    "desc": "国内海外高清影视剧资源",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "雪落影视",
+   "url": "https://xlys.me/",
+   "desc": "国内海外影视剧资源（需梯子）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "多瑙影视",
+   "url": "https://www.duonaovod.com",
+   "desc": "海外华人在线影院（需梯子）",
    "cat": "online_video",
    "tag": "在线影视"
   },
@@ -47,6 +75,13 @@
    "name": "爱电影",
    "url": "https://kuhh4jo.com",
    "desc": "最新热门电影/电视剧（需梯子）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "金牌影视",
+   "url": "https://www.vv3nwjk.com",
+   "desc": "全网VIP资源（可访问需梯子）",
    "cat": "online_video",
    "tag": "在线影视"
   },
@@ -107,6 +142,13 @@
    "tag": "在线影视"
   },
   {
+   "name": "泥视频",
+   "url": "https://www.nivod.vip",
+   "desc": "热门国剧，更新快，无广告",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
    "name": "PPnix",
    "url": "https://www.ppnix.com/cn/",
    "desc": "在线观看电影电视剧",
@@ -149,9 +191,23 @@
    "tag": "在线影视"
   },
   {
+   "name": "光速影视",
+   "url": "https://www.yingshiso.link/",
+   "desc": "作为备选，纯净无广告",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
    "name": "好好看",
    "url": "https://www.hhkan2.com/",
    "desc": "4K高清Netflix新剧（可访问需梯子）",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "IFN",
+   "url": "https://ifn.watch/register?code=8B1EF6",
+   "desc": "为数不多的真4K，部分免费",
    "cat": "online_video",
    "tag": "在线影视"
   },
@@ -177,6 +233,13 @@
    "tag": "在线影视"
   },
   {
+   "name": "奈飞工厂",
+   "url": "https://naifei.fyi/",
+   "desc": "国区可访问，资源无广",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
    "name": "剧OK",
    "url": "https://juok3.top/",
    "desc": "最新电视剧、最新电影",
@@ -184,9 +247,23 @@
    "tag": "在线影视"
   },
   {
+   "name": "蛋蛋奇",
+   "url": "https://www.dandanqi.cc/",
+   "desc": "最新电视剧/电影/无广告",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
    "name": "宅男影视",
    "url": "https://zndy.top/",
    "desc": "想看就看",
+   "cat": "online_video",
+   "tag": "在线影视"
+  },
+  {
+   "name": "影视大全",
+   "url": "https://yingshidaquan.top/",
+   "desc": "在线搜索播放、官解无广",
    "cat": "online_video",
    "tag": "在线影视"
   },
@@ -296,9 +373,9 @@
    "tag": "在线影视"
   },
   {
-   "name": "看看鸭",
-   "url": "https://www.kankanya.me/",
-   "desc": "高清无广告新站",
+   "name": "创享影视",
+   "url": "https://ys.cxkjg.cn/",
+   "desc": "无广告三网高峰秒播（@zxaay贡献）",
    "cat": "online_video",
    "tag": "在线影视"
   }
